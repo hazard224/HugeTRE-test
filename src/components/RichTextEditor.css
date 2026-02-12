@@ -82,63 +82,6 @@
   border-radius: 0 0 4px 4px !important;
 }
 
-/* Toolbar */
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px;
-  border-bottom: 1px solid #e0e0e0;
-  background: #fafafa;
-  align-items: center;
-}
-
-.toolbar-group {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  padding-right: 8px;
-  border-right: 1px solid #e0e0e0;
-}
-
-.toolbar-group:last-child {
-  border-right: none;
-}
-
-.toolbar-button {
-  padding: 8px 12px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #333;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.toolbar-button:hover {
-  background: #e0e0e0;
-  border-color: #ccc;
-}
-
-.toolbar-button:active {
-  background: #d0d0d0;
-}
-
-.toolbar-button.active {
-  background: #0066cc;
-  color: white;
-  border-color: #0066cc;
-}
-
-.toolbar-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 /* Editor Container */
 .editor-container {
   background: white;
