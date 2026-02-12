@@ -138,7 +138,7 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
     <div className="rich-text-editor">
       <div className={`editor-container ${view !== 'wysiwyg' ? 'toolbar-only' : ''}`}>
         <Editor
-            tinymceScriptSrc="/tinymce-test/tinymce/tinymce.min.js"
+            tinymceScriptSrc="/TinyMCE-test/tinymce/tinymce.min.js"
             value={content}
             onEditorChange={handleEditorChange}
             init={{
