@@ -1,0 +1,336 @@
+.rich-text-editor {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  min-width: 900px;
+  max-width: 1400px;
+  position: relative;
+}
+
+/* TinyMCE toolbar styling */
+.rich-text-editor .tox .tox-toolbar,
+.rich-text-editor .tox .tox-toolbar__overflow,
+.rich-text-editor .tox .tox-toolbar__primary {
+  background: white !important;
+  border-bottom: none !important;
+}
+
+.rich-text-editor .tox .tox-tbtn {
+  margin: 2px 1px !important;
+  border-radius: 3px !important;
+  border: none !important;
+}
+
+.rich-text-editor .tox .tox-tbtn:hover {
+  background: #e0e0e0 !important;
+}
+
+.rich-text-editor .tox .tox-tbtn--enabled,
+.rich-text-editor .tox .tox-tbtn--enabled:hover {
+  background: #d0d0d0 !important;
+}
+
+.rich-text-editor .tox .tox-toolbar__group {
+  padding: 0 4px !important;
+}
+
+/* Font and font size dropdown styling */
+.rich-text-editor .tox .tox-tbtn--select {
+  background: white !important;
+  border: 1px solid #ccc !important;
+  border-radius: 3px !important;
+  margin: 2px 1px !important;
+}
+
+.rich-text-editor .tox .tox-tbtn--select:hover {
+  background: #f5f5f5 !important;
+  border-color: #999 !important;
+}
+
+.editor-container {
+  background: white;
+}
+
+/* Hide editor content area but keep toolbar visible */
+.editor-container.toolbar-only .tox-edit-area {
+  display: none !important;
+}
+
+.editor-container.toolbar-only .tox-statusbar {
+  display: none !important;
+}
+
+.editor-container.toolbar-only .tox-tinymce {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Disable editing buttons in code view - keep undo/redo/formatCode/view buttons enabled */
+.editor-container.toolbar-only .tox-tbtn:not([aria-label*="Undo"]):not([aria-label*="Redo"]):not([aria-label*="Format"]):not([aria-label*="WYSIWYG"]):not([aria-label*="Code"]) {
+  opacity: 0.3 !important;
+  pointer-events: none !important;
+}
+
+.editor-container.toolbar-only .tox-tbtn--select {
+  opacity: 0.3 !important;
+  pointer-events: none !important;
+}
+
+.rich-text-editor .tox-tinymce {
+  border-top: none !important;
+  border-radius: 0 0 4px 4px !important;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+  align-items: center;
+}
+
+.toolbar-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding-right: 8px;
+  border-right: 1px solid #e0e0e0;
+}
+
+.toolbar-group:last-child {
+  border-right: none;
+}
+
+.toolbar-button {
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-button:hover {
+  background: #e0e0e0;
+  border-color: #ccc;
+}
+
+.toolbar-button:active {
+  background: #d0d0d0;
+}
+
+.toolbar-button.active {
+  background: #0066cc;
+  color: white;
+  border-color: #0066cc;
+}
+
+.toolbar-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Editor Container */
+.editor-container {
+  background: white;
+}
+
+/* Code Editor */
+.code-view {
+  max-height: 550px;
+  min-height: 300px;
+  overflow: auto;
+}
+
+.code-container {
+  padding: 0;
+  background: #1e1e1e;
+  min-height: 300px;
+}
+
+.code-editor-wrapper {
+  width: 100%;
+}
+
+.code-textarea {
+  outline: none !important;
+  caret-color: white;
+}
+
+/* Color Picker */
+.color-picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+.color-picker-popover {
+  z-index: 10000;
+}
+
+/* Dialog */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  min-width: 400px;
+  color: #333;
+}
+
+.dialog h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+}
+
+.dialog input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333;
+  box-sizing: border-box;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.dialog-buttons button {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.dialog-buttons button:first-child {
+  background: #0066cc;
+  color: white;
+  border-color: #0066cc;
+}
+
+.dialog-buttons button:hover {
+  opacity: 0.9;
+}
+
+/* TinyMCE Overrides */
+.tox-tinymce {
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+/* Code Editor - Match WYSIWYG height */
+.code-editor-wrapper {
+  min-height: 500px;
+}
+
+.code-editor-wrapper textarea {
+  outline: none !important;
+  caret-color: #24292e !important;
+}
+
+.code-editor-wrapper textarea:focus {
+  outline: none !important;
+}
+
+/* Table Popover */
+.table-popover {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.table-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.table-grid-row {
+  display: flex;
+  gap: 2px;
+}
+
+.table-grid-cell {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.table-grid-cell:hover,
+.table-grid-cell.highlighted {
+  background: #d0e7ff;
+  border-color: #0066cc;
+}
+
+.table-size-label {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Semantic HTML Elements in Editor */
+nav, header, footer, article, section, aside, main, figure, figcaption {
+  display: block;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+nav li {
+  display: inline-block;
+  margin-right: 15px;
+}
+
+nav a {
+  text-decoration: none;
+  padding: 5px 10px;
+}
