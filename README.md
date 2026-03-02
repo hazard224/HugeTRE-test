@@ -1,10 +1,10 @@
-# TinyMCE Test
+# HugeRTE Test
 
-Rich text editor test using TinyMCE with three-view layout (WYSIWYG, Code, Preview).
+Rich text editor test using HugeRTE with three-view layout (WYSIWYG, Code, Preview).
 
 ## Features
 
-- TinyMCE rich text editor
+- HugeRTE rich text editor
 - HTML preservation without normalization
 - Code editor with syntax highlighting
 - Live preview
