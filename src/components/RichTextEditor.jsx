@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from 'react'
-import { Editor } from '@tinymce/tinymce-react'
+import { useRef, useState, useEffect, useCallback } from 'react'
+import { Editor } from '@hugerte/hugerte-react'
 import CodeEditor from './CodeEditor'
 import './RichTextEditor.css'
 
@@ -10,9 +10,13 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
   const viewButtonsRef = useRef({ wysiwyg: null, code: null })
   const initialValueLoaded = useRef(false)
   const onChangeTimeoutRef = useRef(null)
+  const backgroundColorRef = useRef(backgroundColor)
+  const handleFormatCodeRef = useRef(null)
+  const handleViewChangeRef = useRef(null)
 
   // Update editor background color dynamically
   useEffect(() => {
+    backgroundColorRef.current = backgroundColor
     if (editorRef.current && view === 'wysiwyg') {
       const iframeBody = editorRef.current.getBody()
       if (iframeBody) {
@@ -41,19 +45,19 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
     }
   }, [value])
 
-  // Debounced onChange to parent
-  const debouncedOnChange = (newContent) => {
+  // Debounced onChange to parent — stable reference via useCallback
+  const debouncedOnChange = useCallback((newContent) => {
     if (onChangeTimeoutRef.current) {
       clearTimeout(onChangeTimeoutRef.current)
     }
     onChangeTimeoutRef.current = setTimeout(() => {
       onChange(newContent)
     }, 150)
-  }
+  }, [onChange])
 
   // Handle editor content change
   const handleEditorChange = (newContent) => {
-    // Only process TinyMCE changes when in WYSIWYG view
+    // Only process HugeRTE changes when in WYSIWYG view
     if (view === 'wysiwyg') {
       setContent(newContent)
       debouncedOnChange(newContent)
@@ -110,9 +114,11 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
         indent = Math.max(0, indent - 1)
         formatted += tab.repeat(indent) + token + '\n'
       } else if (token.match(/^<\w[^>]*[^/]>$/)) {
-        // Opening tag (not self-closing)
+        // Opening tag — skip indent increment for void elements
+        const tagName = token.match(/^<(\w+)/)?.[1]?.toLowerCase()
+        const voidElements = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'])
         formatted += tab.repeat(indent) + token + '\n'
-        indent++
+        if (!voidElements.has(tagName)) indent++
       } else if (token.match(/^<\w[^>]*\/>$/)) {
         // Self-closing tag
         formatted += tab.repeat(indent) + token + '\n'
@@ -124,6 +130,12 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
     
     return formatted.trim()
   }
+
+  // Keep handler refs current to avoid stale closures in HugeRTE setup callbacks
+  useEffect(() => {
+    handleFormatCodeRef.current = handleFormatCode
+    handleViewChangeRef.current = handleViewChange
+  })
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -138,7 +150,7 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
     <div className="rich-text-editor">
       <div className={`editor-container ${view !== 'wysiwyg' ? 'toolbar-only' : ''}`}>
         <Editor
-            tinymceScriptSrc="/TinyMCE-test/tinymce/tinymce.min.js"
+            tinymceScriptSrc="/TinyMCE-test/hugerte/hugerte.min.js"
             value={content}
             onEditorChange={handleEditorChange}
             init={{
@@ -150,7 +162,6 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
               toolbar_mode: 'sliding',
               toolbar_sticky: false,
               forced_root_block: 'p',
-              license_key: 'gpl',
               setup: (editor) => {
                 editorRef.current = editor
 
@@ -160,8 +171,6 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
                 editor.ui.registry.addIcon('fa-fill-drip', '<svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M341.7 135.6L277.3 200L310.7 233.4C323.2 245.9 323.2 266.2 310.7 278.7C298.2 291.2 277.9 291.2 265.4 278.7L232 245.3L135.6 341.7C132.7 344.6 130.5 348.2 129.3 352L450.8 352L504.5 298.3C509.4 293.4 512.1 286.8 512.1 280C512.1 273.2 509.4 266.5 504.5 261.7L378.3 135.6C373.5 130.7 366.9 128 360 128C353.1 128 346.5 130.7 341.7 135.6zM90.3 296.4L186.7 200L137.3 150.6C124.8 138.1 124.8 117.8 137.3 105.3C149.8 92.8 170.1 92.8 182.6 105.3L232 154.7L296.4 90.3C313.3 73.5 336.1 64 360 64C383.9 64 406.7 73.5 423.6 90.3L549.7 216.4C566.5 233.3 576 256.1 576 280C576 303.9 566.5 326.7 549.7 343.6L343.6 549.7C326.7 566.5 303.9 576 280 576C256.1 576 233.3 566.5 216.4 549.7L90.3 423.6C73.5 406.7 64 383.9 64 360C64 336.1 73.5 313.3 90.3 296.4zM544 608C508.7 608 480 579.3 480 544C480 518.8 512.6 464.4 531.2 435.3C537.2 425.9 550.7 425.9 556.7 435.3C575.4 464.4 607.9 518.8 607.9 544C607.9 579.3 579.2 608 543.9 608z"/></svg>')
                 editor.ui.registry.addIcon('fa-pen-to-square', '<svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L368 46.1 465.9 144 490.3 119.6c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L432 177.9 334.1 80 172.4 241.7zM96 64C43 64 0 107 0 160L0 416c0 53 43 96 96 96l256 0c53 0 96-43 96-96l0-96c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7-14.3 32-32 32L96 448c-17.7 0-32-14.3-32-32l0-256c0-17.7 14.3-32 32-32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L96 64z"/></svg>')
                 editor.ui.registry.addIcon('fa-code', '<svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M360.8 1.2c-17-4.9-34.7 5-39.6 22l-128 448c-4.9 17 5 34.7 22 39.6s34.7-5 39.6-22l128-448c4.9-17-5-34.7-22-39.6zm64.6 136.1c-12.5 12.5-12.5 32.8 0 45.3l73.4 73.4-73.4 73.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l96-96c12.5-12.5 12.5-32.8 0-45.3l-96-96c-12.5-12.5-32.8-12.5-45.3 0zm-274.7 0c-12.5-12.5-32.8-12.5-45.3 0l-96 96c-12.5 12.5-12.5 32.8 0 45.3l96 96c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 150.6 182.6c12.5-12.5 12.5-32.8 0-45.3z"/></svg>')
-                editor.ui.registry.addIcon('fa-eye', '<svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM144 256a144 144 0 1 1 288 0 144 144 0 1 1 -288 0zm144-64c0 35.3-28.7 64-64 64c-7.1 0-13.9-1.2-20.3-3.3c-5.5-1.8-11.9 1.6-11.7 7.4c.3 6.9 1.3 13.8 3.2 20.7c13.7 51.2 66.4 81.6 117.6 67.9s81.6-66.4 67.9-117.6c-11.1-41.5-47.8-69.4-88.6-71.1c-5.8-.2-9.2 6.1-7.4 11.7c2.1 6.4 3.3 13.2 3.3 20.3z"/></svg>')
-
                 // Initialize body background color and set default left alignment after editor is ready
                 editor.on('init', () => {
                   const iframeBody = editor.getBody()
@@ -300,7 +309,7 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
                   icon: 'fa-fill-drip',
                   tooltip: 'Editor background color',
                   onAction: () => {
-                    openColorDialog('Editor Background Color', backgroundColor, (color) => {
+                    openColorDialog('Editor Background Color', backgroundColorRef.current, (color) => {
                       // If color is empty or remove color is selected, default to white
                       const finalColor = color && color !== '' ? color : '#ffffff'
                       onBackgroundColorChange?.(finalColor)
@@ -347,14 +356,14 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
                 editor.ui.registry.addButton('formatCode', {
                   icon: 'code-sample',
                   tooltip: 'Format Code',
-                  onAction: handleFormatCode
+                  onAction: () => handleFormatCodeRef.current?.()
                 })
 
                 // Register view switcher buttons
                 editor.ui.registry.addToggleButton('viewWysiwyg', {
                   icon: 'fa-pen-to-square',
                   tooltip: 'WYSIWYG Editor',
-                  onAction: () => handleViewChange('wysiwyg'),
+                  onAction: () => handleViewChangeRef.current?.('wysiwyg'),
                   onSetup: (buttonApi) => {
                     viewButtonsRef.current.wysiwyg = buttonApi
                     buttonApi.setActive(view === 'wysiwyg')
@@ -367,7 +376,7 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
                 editor.ui.registry.addToggleButton('viewCode', {
                   icon: 'fa-code',
                   tooltip: 'Code View',
-                  onAction: () => handleViewChange('code'),
+                  onAction: () => handleViewChangeRef.current?.('code'),
                   onSetup: (buttonApi) => {
                     viewButtonsRef.current.code = buttonApi
                     buttonApi.setActive(view === 'code')

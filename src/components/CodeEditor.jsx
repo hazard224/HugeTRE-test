@@ -1,4 +1,3 @@
-import { useRef } from 'react'
 import Editor from 'react-simple-code-editor'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-markup'
@@ -9,8 +8,6 @@ import 'prismjs/themes/prism.css'
  * Code editor with HTML + CSS syntax highlighting and auto-indentation
  */
 export default function CodeEditor({ value, onChange }) {
-  const editorRef = useRef(null)
-
   /**
    * Handle Tab key to insert spaces instead of moving focus
    */
@@ -97,7 +94,6 @@ export default function CodeEditor({ value, onChange }) {
   return (
     <div className="code-editor-wrapper">
       <Editor
-        ref={editorRef}
         value={value}
         onValueChange={onChange}
         onKeyDown={handleKeyDown}
