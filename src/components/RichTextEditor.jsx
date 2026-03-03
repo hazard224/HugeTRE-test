@@ -55,19 +55,37 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
     }, 150)
   }, [onChange])
 
+  const normalizeLegacyStrikeTags = useCallback((html = '') => {
+    return html
+      .replace(/<\s*(s|del)\b([^>]*)>/gi, '<strike$2>')
+      .replace(/<\/\s*(s|del)\s*>/gi, '</strike>')
+      .replace(/<span\b([^>]*)style=(['"])([^'"]*)\2([^>]*)>([\s\S]*?)<\/span>/gi, (match, beforeStyle, quote, styleValue, afterStyle, innerHtml) => {
+        if (!/text-decoration\s*:\s*line-through/i.test(styleValue)) {
+          return match
+        }
+        return `<strike>${innerHtml}</strike>`
+      })
+      .replace(/<p>\s*([\s\S]*?)\s*<\/p>/gi, (match, innerHtml) => {
+        const hasBlockContent = /<\/?(address|article|aside|blockquote|center|details|dialog|div|dl|fieldset|figcaption|figure|footer|form|h[1-6]|header|hr|main|menu|nav|ol|p|pre|section|table|ul|li|tr|td|th)\b/i.test(innerHtml)
+        return hasBlockContent ? match : innerHtml
+      })
+  }, [])
+
   // Handle editor content change
   const handleEditorChange = (newContent) => {
     // Only process HugeRTE changes when in WYSIWYG view
     if (view === 'wysiwyg') {
-      setContent(newContent)
-      debouncedOnChange(newContent)
+      const normalizedContent = normalizeLegacyStrikeTags(newContent)
+      setContent(normalizedContent)
+      debouncedOnChange(normalizedContent)
     }
   }
 
   // Handle code editor change
   const handleCodeChange = (code) => {
-    setContent(code)
-    debouncedOnChange(code)
+    const normalizedContent = normalizeLegacyStrikeTags(code)
+    setContent(normalizedContent)
+    debouncedOnChange(normalizedContent)
   }
 
   // Format HTML with proper indentation
@@ -88,10 +106,12 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
   const handleViewChange = (newView) => {
     // Save current content before switching views
     if (view === 'wysiwyg' && editorRef.current) {
-      setContent(editorRef.current.getContent())
+      setContent(normalizeLegacyStrikeTags(editorRef.current.getContent()))
     } else if (newView === 'wysiwyg' && editorRef.current) {
       // When switching TO wysiwyg, update TinyMCE with code editor content
-      editorRef.current.setContent(content)
+      const normalizedContent = normalizeLegacyStrikeTags(content)
+      setContent(normalizedContent)
+      editorRef.current.setContent(normalizedContent)
     }
     setView(newView)
   }
@@ -161,7 +181,7 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
               toolbar: 'undo redo formatCode | bold italic underline strikethrough | fontfamily fontsize | textcolor texthighlight framebackcolor | alignleft aligncenter alignright | bullist numlist | table | viewWysiwyg viewCode',
               toolbar_mode: 'sliding',
               toolbar_sticky: false,
-              forced_root_block: 'p',
+              forced_root_block: false,
               setup: (editor) => {
                 editorRef.current = editor
 
@@ -387,14 +407,16 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
                 })
               },
               plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'paste',
                 'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
                 'insertdatetime', 'media', 'table', 'help', 'wordcount'
               ],
+              schema: 'html4',
               verify_html: false,
               extended_valid_elements: '*[*]',
               valid_children: '+body[style],+body[script]',
               cleanup: false,
+              convert_fonts_to_spans: false,
               convert_urls: false,
               remove_trailing_brs: false,
               entity_encoding: 'raw',
@@ -404,8 +426,36 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
               table_cell_advtab: true,
               table_row_advtab: true,
               table_appearance_options: true,
+              table_style_by_css: false,
               object_resizing: 'table',
               contextmenu: 'link image table',
+              formats: {
+                strikethrough: {
+                  inline: 'strike',
+                  exact: true
+                }
+              },
+              paste_preprocess: (_plugin, args) => {
+                args.content = args.content
+                  .replace(/<\s*(s|del)\b([^>]*)>/gi, '<strike$2>')
+                  .replace(/<\/\s*(s|del)\s*>/gi, '</strike>')
+              },
+              paste_postprocess: (_plugin, args) => {
+                const root = args.node
+                const spans = root.querySelectorAll('span[style]')
+
+                spans.forEach((span) => {
+                  const styleAttr = span.getAttribute('style') || ''
+                  const hasLineThrough = /text-decoration\s*:\s*line-through/i.test(styleAttr)
+                  if (!hasLineThrough) return
+
+                  const strike = root.ownerDocument.createElement('strike')
+                  while (span.firstChild) {
+                    strike.appendChild(span.firstChild)
+                  }
+                  span.parentNode.replaceChild(strike, span)
+                })
+              },
               font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 32pt 36pt 48pt',
               font_family_formats: 'Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Tahoma=tahoma,arial,helvetica,sans-serif; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva',
               content_style: `
