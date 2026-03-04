@@ -13,6 +13,8 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
   const backgroundColorRef = useRef(backgroundColor)
   const handleFormatCodeRef = useRef(null)
   const handleViewChangeRef = useRef(null)
+  const pastedTableHadTbodyRef = useRef([])
+  const noTbodyTableFingerprintsRef = useRef(new Set())
 
   // Update editor background color dynamically
   useEffect(() => {
@@ -55,8 +57,45 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
     }, 150)
   }, [onChange])
 
+  const getTableFingerprint = useCallback((tableHtml = '') => {
+    if (typeof document === 'undefined') {
+      return ''
+    }
+
+    const container = document.createElement('div')
+    container.innerHTML = tableHtml
+    const table = container.querySelector('table')
+    if (!table) {
+      return ''
+    }
+
+    const normalizedTable = table.outerHTML
+      .replace(/<tbody\b[^>]*>/gi, '')
+      .replace(/<\/tbody>/gi, '')
+      .replace(/\s+/g, ' ')
+      .replace(/>\s+</g, '><')
+      .trim()
+      .toLowerCase()
+
+    return normalizedTable
+  }, [])
+
+  const trackNoTbodyTablesFromSourceHtml = useCallback((html = '') => {
+    const sourceTables = html.match(/<table\b[^>]*>[\s\S]*?<\/table>/gi) || []
+    sourceTables.forEach((tableHtml) => {
+      if (/<tbody\b/i.test(tableHtml)) {
+        return
+      }
+
+      const fingerprint = getTableFingerprint(tableHtml)
+      if (fingerprint) {
+        noTbodyTableFingerprintsRef.current.add(fingerprint)
+      }
+    })
+  }, [getTableFingerprint])
+
   const normalizeLegacyStrikeTags = useCallback((html = '') => {
-    return html
+    let normalized = html
       .replace(/<\s*(s|del)\b([^>]*)>/gi, '<strike$2>')
       .replace(/<\/\s*(s|del)\s*>/gi, '</strike>')
       .replace(/<span\b([^>]*)style=(['"])([^'"]*)\2([^>]*)>([\s\S]*?)<\/span>/gi, (match, beforeStyle, quote, styleValue, afterStyle, innerHtml) => {
@@ -65,11 +104,35 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
         }
         return `<strike>${innerHtml}</strike>`
       })
-      .replace(/<p>\s*([\s\S]*?)\s*<\/p>/gi, (match, innerHtml) => {
+
+    if (typeof document !== 'undefined') {
+      const container = document.createElement('div')
+      container.innerHTML = normalized
+
+      const tables = container.querySelectorAll('table')
+      tables.forEach((table) => {
+        const fingerprint = getTableFingerprint(table.outerHTML)
+        if (!fingerprint || !noTbodyTableFingerprintsRef.current.has(fingerprint)) {
+          return
+        }
+
+        const tbodies = Array.from(table.children).filter((child) => child.tagName === 'TBODY')
+        tbodies.forEach((tbody) => {
+          while (tbody.firstChild) {
+            table.insertBefore(tbody.firstChild, tbody)
+          }
+          table.removeChild(tbody)
+        })
+      })
+
+      normalized = container.innerHTML
+    }
+
+    return normalized.replace(/<p>\s*([\s\S]*?)\s*<\/p>/gi, (match, innerHtml) => {
         const hasBlockContent = /<\/?(address|article|aside|blockquote|center|details|dialog|div|dl|fieldset|figcaption|figure|footer|form|h[1-6]|header|hr|main|menu|nav|ol|p|pre|section|table|ul|li|tr|td|th)\b/i.test(innerHtml)
         return hasBlockContent ? match : innerHtml
       })
-  }, [])
+  }, [getTableFingerprint])
 
   // Handle editor content change
   const handleEditorChange = (newContent) => {
@@ -83,6 +146,7 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
 
   // Handle code editor change
   const handleCodeChange = (code) => {
+    trackNoTbodyTablesFromSourceHtml(code)
     const normalizedContent = normalizeLegacyStrikeTags(code)
     setContent(normalizedContent)
     debouncedOnChange(normalizedContent)
@@ -109,6 +173,7 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
       setContent(normalizeLegacyStrikeTags(editorRef.current.getContent()))
     } else if (newView === 'wysiwyg' && editorRef.current) {
       // When switching TO wysiwyg, update TinyMCE with code editor content
+      trackNoTbodyTablesFromSourceHtml(content)
       const normalizedContent = normalizeLegacyStrikeTags(content)
       setContent(normalizedContent)
       editorRef.current.setContent(normalizedContent)
@@ -439,6 +504,10 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
                 args.content = args.content
                   .replace(/<\s*(s|del)\b([^>]*)>/gi, '<strike$2>')
                   .replace(/<\/\s*(s|del)\s*>/gi, '</strike>')
+
+                const pastedTables = args.content.match(/<table\b[^>]*>[\s\S]*?<\/table>/gi) || []
+                pastedTableHadTbodyRef.current = pastedTables.map((tableHtml) => /<tbody\b/i.test(tableHtml))
+                trackNoTbodyTablesFromSourceHtml(args.content)
               },
               paste_postprocess: (_plugin, args) => {
                 const root = args.node
@@ -455,6 +524,30 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
                   }
                   span.parentNode.replaceChild(strike, span)
                 })
+
+                const pastedTables = Array.from(root.querySelectorAll('table'))
+                pastedTables.forEach((table, index) => {
+                  const hadTbodyInSource = pastedTableHadTbodyRef.current[index]
+                  if (hadTbodyInSource !== false) {
+                    return
+                  }
+
+                  const tbodies = Array.from(table.children).filter((child) => child.tagName === 'TBODY')
+                  tbodies.forEach((tbody) => {
+                    while (tbody.firstChild) {
+                      table.insertBefore(tbody.firstChild, tbody)
+                    }
+                    table.removeChild(tbody)
+                  })
+
+                  const fingerprint = getTableFingerprint(table.outerHTML)
+                  if (fingerprint) {
+                    noTbodyTableFingerprintsRef.current.add(fingerprint)
+                  }
+                })
+
+                pastedTableHadTbodyRef.current = []
+
               },
               font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 32pt 36pt 48pt',
               font_family_formats: 'Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Tahoma=tahoma,arial,helvetica,sans-serif; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva',
