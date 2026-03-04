@@ -242,7 +242,7 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
     <div className="rich-text-editor">
       <div className={`editor-container ${view !== 'wysiwyg' ? 'toolbar-only' : ''}`}>
         <Editor
-            tinymceScriptSrc="/TinyMCE-test/hugerte/hugerte.min.js"
+            hugerteScriptSrc="/HugeTRE-test/hugerte/hugerte.min.js"
             value={content}
             onEditorChange={handleEditorChange}
             init={{
@@ -545,7 +545,7 @@ export default function RichTextEditor({ value = '', onChange, backgroundColor =
                   margin: 10px 0;
                 }
                 nav::before { content: 'nav'; display: block; font-size: 10px; color: #999; }
-                header::before { content: 'header'; display: block; font-size: 10px; color: #999; }
+                header::before { content: 'header'; display: block; font-size: 10px; color: #999; }3
                 footer::before { content: 'footer'; display: block; font-size: 10px; color: #999; }
                 article::before { content: 'article'; display: block; font-size: 10px; color: #999; }
                 section::before { content: 'section'; display: block; font-size: 10px; color: #999; }
